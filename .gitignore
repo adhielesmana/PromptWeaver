@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+
+# Cache and generated files
+public/cache/
+public/videos/
+public/media/
+tmp/
+/tmp/
