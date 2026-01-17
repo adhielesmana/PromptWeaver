@@ -8,10 +8,13 @@ import {
   type InsertCachedVideoClip,
   type MediaItem,
   type InsertMediaItem,
+  type AppSetting,
+  type InsertAppSetting,
   users,
   videoGenerations,
   cachedVideoClips,
-  mediaLibrary
+  mediaLibrary,
+  appSettings
 } from "@shared/schema";
 import { eq, sql, desc, ilike } from "drizzle-orm";
 
@@ -19,6 +22,15 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: string, data: Partial<User>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
+  
+  // Settings methods
+  getSetting(key: string): Promise<AppSetting | undefined>;
+  getAllSettings(): Promise<AppSetting[]>;
+  setSetting(key: string, value: string, description?: string): Promise<AppSetting>;
+  deleteSetting(key: string): Promise<void>;
   
   // Video generation methods
   createVideoGeneration(data: InsertVideoGeneration): Promise<VideoGeneration>;
@@ -55,6 +67,53 @@ class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUser(id: string, data: Partial<User>): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async getSetting(key: string): Promise<AppSetting | undefined> {
+    const [setting] = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    return setting;
+  }
+
+  async getAllSettings(): Promise<AppSetting[]> {
+    return db.select().from(appSettings).orderBy(appSettings.key);
+  }
+
+  async setSetting(key: string, value: string, description?: string): Promise<AppSetting> {
+    const existing = await this.getSetting(key);
+    if (existing) {
+      const [updated] = await db
+        .update(appSettings)
+        .set({ value, description, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(appSettings.key, key))
+        .returning();
+      return updated;
+    }
+    const [setting] = await db
+      .insert(appSettings)
+      .values({ key, value, description })
+      .returning();
+    return setting;
+  }
+
+  async deleteSetting(key: string): Promise<void> {
+    await db.delete(appSettings).where(eq(appSettings.key, key));
   }
 
   async createVideoGeneration(data: InsertVideoGeneration): Promise<VideoGeneration> {
