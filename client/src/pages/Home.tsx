@@ -1,8 +1,20 @@
-import { Link, Route, Switch } from "wouter";
+import { Link } from "wouter";
+import { useLocation } from "wouter";
 import VideoGenerator from "@/components/VideoGenerator";
+import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Settings, LogOut } from "lucide-react";
 import background from "@assets/generated_images/abstract_digital_video_timeline_and_waves.png";
 
 export default function Home() {
+  const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const handleLogout = async () => {
+    await logout();
+    setLocation("/login");
+  };
+
   return (
     <div className="min-h-screen w-full bg-background text-foreground relative overflow-hidden">
       {/* Background Image with Overlay */}
@@ -30,12 +42,27 @@ export default function Home() {
         </div>
         <nav className="hidden md:flex gap-8 text-sm font-medium text-muted-foreground">
           <Link href="/library" className="hover:text-cyan-400 transition-colors" data-testid="link-library">Media Library</Link>
-          <a href="#" className="hover:text-cyan-400 transition-colors">Showcase</a>
-          <a href="#" className="hover:text-cyan-400 transition-colors">Pricing</a>
+          {(user?.role === "superadmin" || user?.role === "admin") && (
+            <Link href="/admin" className="hover:text-cyan-400 transition-colors" data-testid="link-admin">
+              Admin Dashboard
+            </Link>
+          )}
         </nav>
         <div className="flex items-center gap-4">
-           <span className="text-xs text-muted-foreground hidden sm:block">v2.4.0-beta</span>
-           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-xs text-muted-foreground hidden sm:block">
+            {user?.username}
+            <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-cyan-600/20 text-cyan-400">
+              {user?.role}
+            </span>
+          </span>
+          {(user?.role === "superadmin" || user?.role === "admin") && (
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/admin")} data-testid="button-admin">
+              <Settings className="w-4 h-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={handleLogout} data-testid="button-logout">
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
       </header>
 
