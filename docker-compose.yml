@@ -10,6 +10,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-videogen_password}@db:5432/${POSTGRES_DB:-videogen}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PEXELS_API_KEY=${PEXELS_API_KEY}
+      - SESSION_SECRET=${SESSION_SECRET}
     depends_on:
       db:
         condition: service_healthy

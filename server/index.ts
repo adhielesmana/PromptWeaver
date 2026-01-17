@@ -28,14 +28,20 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+const sessionSecret = process.env.SESSION_SECRET || "ai-video-forge-dev-secret-change-in-production";
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV === "production") {
+  console.warn("⚠️  WARNING: SESSION_SECRET not set! Using default secret is insecure in production.");
+}
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "ai-video-forge-secret-key-change-in-production",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
+      sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
     },
   })

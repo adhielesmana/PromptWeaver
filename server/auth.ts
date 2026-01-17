@@ -19,18 +19,21 @@ export interface AuthenticatedRequest extends Request {
 }
 
 const SUPERADMIN_USERNAME = "adhielesmana";
-const SUPERADMIN_PASSWORD_HASH = bcrypt.hashSync("admin123", 10);
+const DEFAULT_PASSWORD = "admin123";
 
 export async function initializeSuperAdmin() {
   try {
     const existing = await storage.getUserByUsername(SUPERADMIN_USERNAME);
     if (!existing) {
+      const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
       await storage.createUser({
         username: SUPERADMIN_USERNAME,
-        password: SUPERADMIN_PASSWORD_HASH,
+        password: passwordHash,
         role: "superadmin",
       });
-      console.log("Superadmin user created: adhielesmana");
+      console.log("⚠️  SECURITY WARNING: Superadmin user created with default password!");
+      console.log("⚠️  Please change the password immediately via Admin Dashboard!");
+      console.log("⚠️  Default credentials: adhielesmana / admin123");
     } else if (existing.role !== "superadmin") {
       await storage.updateUser(existing.id, { role: "superadmin" });
       console.log("Superadmin role restored for user: adhielesmana");

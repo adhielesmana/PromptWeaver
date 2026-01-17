@@ -175,7 +175,18 @@ setup_env() {
         echo "PEXELS_API_KEY=$PEXELS_KEY" >> .env
     fi
     
+    if [ -z "$SESSION_SECRET" ]; then
+        echo -e "${YELLOW}Generating secure SESSION_SECRET...${NC}"
+        SESSION_SECRET=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+        echo "SESSION_SECRET=$SESSION_SECRET" >> .env
+    fi
+    
     echo -e "${GREEN}✓ Environment configured${NC}"
+    echo ""
+    echo -e "${YELLOW}⚠️  IMPORTANT: Default superadmin credentials:${NC}"
+    echo -e "   Username: ${BLUE}adhielesmana${NC}"
+    echo -e "   Password: ${BLUE}admin123${NC}"
+    echo -e "${YELLOW}   Please change this password immediately after first login!${NC}"
 }
 
 # Function to create data directories
