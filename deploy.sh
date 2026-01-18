@@ -13,6 +13,24 @@ NC='\033[0m' # No Color
 APP_NAME="ai-video-forge"
 DEFAULT_PORT=8080
 MAX_PORT=8200
+
+# Self-update from git before running
+self_update() {
+    if [ -d ".git" ]; then
+        echo -e "${BLUE}Updating from git...${NC}"
+        git fetch origin 2>/dev/null || true
+        git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || true
+        echo -e "${GREEN}✓ Updated to latest version${NC}"
+    fi
+}
+
+# Always self-update first (skip if --no-update flag)
+if [ "$1" != "--no-update" ]; then
+    self_update
+    # Re-execute the updated script
+    exec bash "$0" --no-update "$@"
+fi
+shift 2>/dev/null || true
 NGINX_CONF_PATH="/etc/nginx/sites-available/${APP_NAME}"
 NGINX_ENABLED_PATH="/etc/nginx/sites-enabled/${APP_NAME}"
 
