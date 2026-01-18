@@ -24,14 +24,45 @@ echo ""
 # Function to check if a port is available
 check_port() {
     local port=$1
+    
+    # Check with ss (most reliable)
     if command -v ss &> /dev/null; then
-        ss -tuln | grep -q ":${port} " && return 1 || return 0
-    elif command -v netstat &> /dev/null; then
-        netstat -tuln | grep -q ":${port} " && return 1 || return 0
-    else
-        # Fallback: try to bind to the port
-        (echo >/dev/tcp/localhost/$port) 2>/dev/null && return 1 || return 0
+        if ss -tuln | grep -E ":${port}\s" > /dev/null 2>&1; then
+            return 1
+        fi
     fi
+    
+    # Check with netstat
+    if command -v netstat &> /dev/null; then
+        if netstat -tuln | grep -E ":${port}\s" > /dev/null 2>&1; then
+            return 1
+        fi
+    fi
+    
+    # Check with lsof
+    if command -v lsof &> /dev/null; then
+        if lsof -i :$port > /dev/null 2>&1; then
+            return 1
+        fi
+    fi
+    
+    # Check Docker containers using this port
+    if command -v docker &> /dev/null; then
+        if docker ps --format '{{.Ports}}' 2>/dev/null | grep -q ":${port}->" ; then
+            return 1
+        fi
+    fi
+    
+    # Try to actually bind to the port (most reliable test)
+    if command -v nc &> /dev/null; then
+        if ! nc -z localhost $port 2>/dev/null; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+    
+    return 0
 }
 
 # Function to find available port
