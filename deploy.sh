@@ -11,8 +11,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 APP_NAME="ai-video-forge"
-DEFAULT_PORT=5000
-MAX_PORT=5100
+DEFAULT_PORT=8080
+MAX_PORT=8200
 NGINX_CONF_PATH="/etc/nginx/sites-available/${APP_NAME}"
 NGINX_ENABLED_PATH="/etc/nginx/sites-enabled/${APP_NAME}"
 
@@ -35,16 +35,23 @@ update_code() {
 check_port() {
     local port=$1
     
-    # Check with ss (most reliable)
+    # Check all Docker containers (running and stopped) for port bindings
+    if command -v docker &> /dev/null; then
+        if docker ps -a --format '{{.Ports}}' 2>/dev/null | grep -q ":${port}" ; then
+            return 1
+        fi
+    fi
+    
+    # Check with ss
     if command -v ss &> /dev/null; then
-        if ss -tuln | grep -E ":${port}\s" > /dev/null 2>&1; then
+        if ss -tuln 2>/dev/null | grep -q ":${port} " ; then
             return 1
         fi
     fi
     
     # Check with netstat
     if command -v netstat &> /dev/null; then
-        if netstat -tuln | grep -E ":${port}\s" > /dev/null 2>&1; then
+        if netstat -tuln 2>/dev/null | grep -q ":${port} " ; then
             return 1
         fi
     fi
@@ -56,18 +63,9 @@ check_port() {
         fi
     fi
     
-    # Check Docker containers using this port
-    if command -v docker &> /dev/null; then
-        if docker ps --format '{{.Ports}}' 2>/dev/null | grep -q ":${port}->" ; then
-            return 1
-        fi
-    fi
-    
-    # Try to actually bind to the port (most reliable test)
+    # Try to connect to the port
     if command -v nc &> /dev/null; then
-        if ! nc -z localhost $port 2>/dev/null; then
-            return 0
-        else
+        if nc -z 127.0.0.1 $port 2>/dev/null; then
             return 1
         fi
     fi
