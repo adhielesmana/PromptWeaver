@@ -153,12 +153,10 @@ setup_env() {
         fi
     fi
     
-    # Update or add APP_PORT
-    if grep -q "^APP_PORT=" .env 2>/dev/null; then
-        sed -i "s/^APP_PORT=.*/APP_PORT=$port/" .env
-    else
-        echo "APP_PORT=$port" >> .env
-    fi
+    # Update or add APP_PORT (remove old entry first to avoid duplicates)
+    sed -i '/^APP_PORT=/d' .env 2>/dev/null || true
+    echo "APP_PORT=$port" >> .env
+    echo -e "${GREEN}✓ Using port: $port${NC}"
     
     # Check required environment variables
     source .env 2>/dev/null || true
@@ -222,11 +220,15 @@ deploy_docker() {
     # Export port for docker-compose
     export APP_PORT=$port
     
+    # Stop any existing containers first
+    echo -e "${YELLOW}Stopping existing containers...${NC}"
+    $COMPOSE_CMD down 2>/dev/null || true
+    
     # Build and start containers
     echo -e "${YELLOW}Building Docker images...${NC}"
     $COMPOSE_CMD build
     
-    echo -e "${YELLOW}Starting containers...${NC}"
+    echo -e "${YELLOW}Starting containers on port $port...${NC}"
     $COMPOSE_CMD up -d
     
     # Wait for database to be ready
