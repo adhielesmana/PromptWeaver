@@ -21,6 +21,16 @@ echo -e "${BLUE}   AI Video Forge - Deployment Script   ${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
+# Function to update code from git (force pull, no stash needed)
+update_code() {
+    if [ -d ".git" ]; then
+        echo -e "${BLUE}Updating code from git...${NC}"
+        git fetch origin
+        git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)
+        echo -e "${GREEN}✓ Code updated${NC}"
+    fi
+}
+
 # Function to check if a port is available
 check_port() {
     local port=$1
@@ -277,6 +287,11 @@ deploy_docker() {
 
 # Main execution
 main() {
+    # Update code from git if requested
+    if [ "$1" = "--update" ] || [ "$1" = "-u" ]; then
+        update_code
+    fi
+    
     # Find available port
     echo -e "${BLUE}Checking port availability...${NC}"
     PORT=$(find_available_port)
@@ -315,4 +330,4 @@ main() {
 }
 
 # Run main function
-main
+main "$@"
