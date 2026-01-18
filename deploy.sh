@@ -255,12 +255,22 @@ main() {
     # Update code from git if requested
     if [ "$1" = "--update" ] || [ "$1" = "-u" ]; then
         update_code
+        shift
     fi
     
-    # Find available port
-    echo -e "${BLUE}Checking port availability...${NC}"
-    PORT=$(find_available_port)
-    echo -e "${GREEN}✓ Using port: $PORT${NC}"
+    # Allow port override via command line or environment
+    if [ -n "$1" ] && [ "$1" -eq "$1" ] 2>/dev/null; then
+        PORT=$1
+        echo -e "${GREEN}✓ Using specified port: $PORT${NC}"
+    elif [ -n "$DEPLOY_PORT" ]; then
+        PORT=$DEPLOY_PORT
+        echo -e "${GREEN}✓ Using env port: $PORT${NC}"
+    else
+        # Find available port
+        echo -e "${BLUE}Checking port availability...${NC}"
+        PORT=$(find_available_port)
+        echo -e "${GREEN}✓ Using auto-detected port: $PORT${NC}"
+    fi
     echo ""
     
     # Setup nginx
