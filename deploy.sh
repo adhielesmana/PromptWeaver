@@ -31,59 +31,26 @@ update_code() {
     fi
 }
 
-# Function to check if a port is available
-check_port() {
-    local port=$1
-    
-    # Check all Docker containers (running and stopped) for port bindings
-    if command -v docker &> /dev/null; then
-        if docker ps -a --format '{{.Ports}}' 2>/dev/null | grep -q ":${port}" ; then
-            return 1
-        fi
-    fi
-    
-    # Check with ss
-    if command -v ss &> /dev/null; then
-        if ss -tuln 2>/dev/null | grep -q ":${port} " ; then
-            return 1
-        fi
-    fi
-    
-    # Check with netstat
-    if command -v netstat &> /dev/null; then
-        if netstat -tuln 2>/dev/null | grep -q ":${port} " ; then
-            return 1
-        fi
-    fi
-    
-    # Check with lsof
-    if command -v lsof &> /dev/null; then
-        if lsof -i :$port > /dev/null 2>&1; then
-            return 1
-        fi
-    fi
-    
-    # Try to connect to the port
-    if command -v nc &> /dev/null; then
-        if nc -z 127.0.0.1 $port 2>/dev/null; then
-            return 1
-        fi
-    fi
-    
-    return 0
-}
-
-# Function to find available port
+# Function to find available port - simple and reliable
 find_available_port() {
     local port=$DEFAULT_PORT
+    
     while [ $port -le $MAX_PORT ]; do
-        if check_port $port; then
-            echo $port
-            return 0
+        # Method 1: Check if anything is listening on this port
+        if ! ss -tuln 2>/dev/null | grep -q ":${port}\b"; then
+            # Method 2: Double check with docker
+            if ! docker ps --format '{{.Ports}}' 2>/dev/null | grep -q "0.0.0.0:${port}->"; then
+                # Method 3: Try to actually use the port
+                if ! (echo >/dev/tcp/127.0.0.1/$port) 2>/dev/null; then
+                    echo $port
+                    return 0
+                fi
+            fi
         fi
-        echo -e "${YELLOW}Port $port is in use, trying next...${NC}" >&2
+        echo -e "${YELLOW}Port $port is in use, trying $((port + 1))...${NC}" >&2
         port=$((port + 1))
     done
+    
     echo -e "${RED}No available ports found between $DEFAULT_PORT and $MAX_PORT${NC}" >&2
     exit 1
 }
