@@ -222,14 +222,14 @@ deploy_docker() {
     
     # Stop any existing containers first
     echo -e "${YELLOW}Stopping existing containers...${NC}"
-    $COMPOSE_CMD down 2>/dev/null || true
+    APP_PORT=$port $COMPOSE_CMD down 2>/dev/null || true
     
     # Build and start containers
     echo -e "${YELLOW}Building Docker images...${NC}"
-    $COMPOSE_CMD build
+    APP_PORT=$port $COMPOSE_CMD build
     
     echo -e "${YELLOW}Starting containers on port $port...${NC}"
-    $COMPOSE_CMD up -d
+    APP_PORT=$port $COMPOSE_CMD --env-file .env up -d
     
     # Wait for database to be ready
     echo -e "${YELLOW}Waiting for database to be ready...${NC}"
@@ -237,8 +237,8 @@ deploy_docker() {
     
     # Run database migrations
     echo -e "${YELLOW}Running database migrations...${NC}"
-    $COMPOSE_CMD exec -T app npx drizzle-kit push --force 2>/dev/null || \
-    $COMPOSE_CMD exec -T app npm run db:push 2>/dev/null || \
+    APP_PORT=$port $COMPOSE_CMD exec -T app npx drizzle-kit push --force 2>/dev/null || \
+    APP_PORT=$port $COMPOSE_CMD exec -T app npm run db:push 2>/dev/null || \
     echo -e "${YELLOW}Migration command not available, database may already be up to date${NC}"
     
     echo -e "${GREEN}✓ Deployment complete!${NC}"
