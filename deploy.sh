@@ -58,12 +58,12 @@ setup_nginx() {
     else
         echo -e "${YELLOW}Installing Nginx...${NC}"
         if command -v apt-get &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y nginx
+            apt-get update
+            apt-get install -y nginx
         elif command -v yum &> /dev/null; then
-            sudo yum install -y nginx
+            yum install -y nginx
         elif command -v dnf &> /dev/null; then
-            sudo dnf install -y nginx
+            dnf install -y nginx
         else
             echo -e "${RED}Unable to install Nginx. Please install it manually.${NC}"
             exit 1
@@ -72,8 +72,8 @@ setup_nginx() {
     fi
     
     # Ensure nginx is running
-    sudo systemctl enable nginx 2>/dev/null || true
-    sudo systemctl start nginx 2>/dev/null || true
+    systemctl enable nginx 2>/dev/null || true
+    systemctl start nginx 2>/dev/null || true
 }
 
 # Function to setup nginx config
@@ -83,7 +83,7 @@ setup_nginx_config() {
     
     if [ -f "$NGINX_CONF_PATH" ]; then
         echo -e "${GREEN}✓ Nginx config already exists, updating port to $port...${NC}"
-        sudo sed -i "s/proxy_pass http:\/\/127.0.0.1:[0-9]*/proxy_pass http:\/\/127.0.0.1:$port/" "$NGINX_CONF_PATH"
+        sed -i "s/proxy_pass http:\/\/127.0.0.1:[0-9]*/proxy_pass http:\/\/127.0.0.1:$port/" "$NGINX_CONF_PATH"
     else
         echo -e "${YELLOW}Creating Nginx configuration...${NC}"
         
@@ -91,7 +91,7 @@ setup_nginx_config() {
         read -p "Enter your domain name (or press Enter for localhost): " DOMAIN
         DOMAIN=${DOMAIN:-localhost}
         
-        sudo tee "$NGINX_CONF_PATH" > /dev/null << EOF
+        tee "$NGINX_CONF_PATH" > /dev/null << EOF
 server {
     listen 80;
     server_name ${DOMAIN};
@@ -131,11 +131,11 @@ EOF
     
     # Enable site
     if [ ! -L "$NGINX_ENABLED_PATH" ]; then
-        sudo ln -sf "$NGINX_CONF_PATH" "$NGINX_ENABLED_PATH"
+        ln -sf "$NGINX_CONF_PATH" "$NGINX_ENABLED_PATH"
     fi
     
     # Test and reload nginx
-    sudo nginx -t && sudo systemctl reload nginx
+    nginx -t && systemctl reload nginx
     echo -e "${GREEN}✓ Nginx configured and reloaded${NC}"
 }
 
